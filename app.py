@@ -1,4 +1,5 @@
 import streamlit as st
+import time
 from google import genai
 from google.genai import types
 from google.genai.errors import ClientError
@@ -38,8 +39,53 @@ for message in st.session_state.messages:
                     st.caption(f"📄 {source['file']} (Score: {source['score']:.2f})")
                     st.markdown(f"> {source['text']}")
 
+import time
+
+# Rate limiting inicialization
+if "request_timestamps" not in st.session_state:
+    st.session_state.request_timestamps = []
+if "block_until" not in st.session_state:
+    st.session_state.block_until = 0
+
+current_time = time.time()
+
+# Limpar requests antigos (> 60s)
+st.session_state.request_timestamps = [t for t in st.session_state.request_timestamps if current_time - t < 60]
+
+# Liberação natural do bloqueio após o tempo acabar
+if st.session_state.block_until > 0 and current_time >= st.session_state.block_until:
+    st.session_state.block_until = 0
+    st.session_state.request_timestamps = []
+
+# Se estiver bloqueado e ocorrer um refresh no navegador no meio da contagem
+if st.session_state.block_until > current_time:
+    countdown_placeholder = st.empty()
+    remaining = int(st.session_state.block_until - current_time)
+    for i in range(remaining, 0, -1):
+        countdown_placeholder.warning(f"⏳ **Limite de Proteção:** Você enviou requisições demais (10/minuto). Aguarde **{i} segundos** para liberação do sistema.")
+        time.sleep(1)
+    countdown_placeholder.empty()
+    st.session_state.block_until = 0
+    st.session_state.request_timestamps = []
+    st.rerun()
+
 # Accept user input
 if prompt := st.chat_input("Qual a sua dúvida?"):
+    # Add new timestamp
+    st.session_state.request_timestamps.append(time.time())
+    
+    # Check rate limit
+    if len(st.session_state.request_timestamps) >= 10:
+        st.session_state.block_until = time.time() + 60
+        countdown_placeholder = st.empty()
+        for i in range(60, 0, -1):
+            countdown_placeholder.warning(f"⏳ **Limite de Proteção:** Você enviou 10 requisições em menos de 1 minuto. Aguarde **{i} segundos** para liberação do sistema.")
+            time.sleep(1)
+        countdown_placeholder.empty()
+        st.session_state.block_until = 0
+        st.session_state.request_timestamps = []
+        st.rerun()
+
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
     
