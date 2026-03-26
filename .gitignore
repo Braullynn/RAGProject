@@ -1,0 +1,36 @@
+# Variáveis de ambiente (NUNCA commitar!)
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Dados temporários
+data/*.tmp
+*.log
+
+# Arquivos locais do usuário
+Resumo_Retomada_Automatica.txt
+data/documentos/*.txt
+data/documentos/*.pdf
